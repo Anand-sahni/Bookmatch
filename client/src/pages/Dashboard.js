@@ -1,63 +1,102 @@
 import TinderCard from "react-tinder-card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatContainer from "../components/ChatContainer";
+import {useCookies} from 'react-cookie'
+import axios from 'axios'
 
 const DashBoard = () => {
-  const characters = [
-    {
-      name: "user1",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-    {
-      name: "user2",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-    {
-      name: "user3",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-    {
-      name: "user4",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-    {
-      name: "user5",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-    {
-      name: "user6",
-      url: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8dGluZGVyJTIwcHJvZmlsZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1000&q=60",
-    },
-  ];
-
+  
+  
+  const [user, setUser] = useState(null)
+  const [genredUsers, setGenredUsers] = useState(null)
   const [lastDirection, setLastDirection] = useState();
+  // const [lastDirection, setLastDirection] = useState()
+  const [cookies, setCookie, removeCookie] = useCookies(['user'])
 
-  const swiped = (direction, nameToDelete) => {
-    console.log("removing: " + nameToDelete);
-    setLastDirection(direction);
-  };
+  const userId = cookies.UserId
+
+
+  const getUser = async () => {
+      try {
+          const response = await axios.get('http://localhost:8000/user', {
+              params: {userId}
+          })
+          setUser(response.data)
+      } catch (error) {
+          console.log(error)
+      }
+  }
+
+  const getGenredUsers = async () => {
+    try {
+        const response = await axios.get('http://localhost:8000/genred-users', {
+            params: {genre: user?.genre_interest}
+        })
+        setGenredUsers(response.data)
+    } catch (error) {
+        console.log(error)
+    }
+  }
+
+  useEffect(() =>{
+    getUser()
+    getGenredUsers()
+  }, [user, genredUsers])
+
+
+
+
+  const updateMatches = async (matchedUserId) => {
+    try {
+        await axios.put('http://localhost:8000/addmatch', {
+            userId,
+            matchedUserId
+        })
+        getUser()
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+// console.log(user)
+
+
+
+  const swiped = (direction, swipedUserId) => {
+    if (direction === 'right') {
+        updateMatches(swipedUserId)
+    }
+    setLastDirection(direction)
+}
 
   const outOfFrame = (name) => {
     console.log(name + "left the screen!");
   };
 
+
+  const matchedUserIds = user?.matches.map(({user_id}) => user_id).concat(userId)
+
+  const filteredGenredUsers = genredUsers?.filter(genredUser => !matchedUserIds.includes(genredUser.user_id))
+
   return (
+    <>
+    {user &&
     <div className="dashboard">
-      <ChatContainer />
+      <ChatContainer user={user}/>
       <div className="swipe-container">
         <div className="card-container">
-          {characters.map((character) => (
+          {filteredGenredUsers?.map((genredUser) => (
             <TinderCard
               className="swipe"
-              key={character.name}
-              onSwipe={(dir) => swiped(dir, character.name)}
-              onCardLeftScreen={() => outOfFrame(character.name)}
+              key={genredUser.user_id}
+              onSwipe={(dir) => swiped(dir, genredUser.user_id)}
+              onCardLeftScreen={() => outOfFrame(genredUser.first_name)}
             >
               <div
                 className="card"
-                style={{ backgroundImage: "url(" + character.url + ")" }}
+                style={{ backgroundImage: "url(" + genredUser.url + ")" }}
               >
-                <h3>{character.name}</h3>
+                <h3>{genredUser.first_name}</h3>
               </div>
             </TinderCard>
           ))}
@@ -67,7 +106,8 @@ const DashBoard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>}
+    </>
   );
 };
 
