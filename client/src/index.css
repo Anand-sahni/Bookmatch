@@ -90,11 +90,11 @@ nav .logo-container .logo {
 /*-------- Home page --------*/
 .overlay {
     width: 100vw;
-    background-size: cover;
     /* background-size: contain; */
     /* background-repeat: no-repeat; */
     height: 100vh;
     background-image: url('./images/book2.jpg');
+    background-size: cover;
     /* position: fixed; */
     /* background: linear-gradient(
             to bottom,
@@ -285,6 +285,7 @@ nav .logo-container .logo {
     font-size: 20px;
     margin: 2px;
     padding: 10px;
+    cursor: pointer;
 }
 
 .chat-container .option:disabled {
@@ -319,8 +320,9 @@ nav .logo-container .logo {
 .chat-display,
 .matches-display {
     padding: 20px;
-    height: 24vh;
+    height: 50vh;
     overflow-y: auto;
+    cursor: pointer;
 }
 
 /*-------- Chat Input --------*/
